@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glass Landed Cost Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #111822;
+    --surface2: #1a2433;
+    --border: #1e2d40;
+    --accent: #00c2ff;
+    --accent2: #ff6b2b;
+    --green: #00e5a0;
+    --text: #e8edf2;
+    --muted: #6b7f94;
+    --s1: #1a3a5c;
+    --s2: #1a2e1a;
+    --s3: #3a1a0a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0a0e14 0%, #0d1e30 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .logo span { color: var(--accent2); }
+  .badge {
+    background: var(--accent2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .btn-export {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  /* GLOBAL SETTINGS */
+  .globals {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .globals-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .globals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .field input, .field select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field select option { background: var(--surface2); }
+
+  /* MAIN CONTENT */
+  .main { padding: 20px; }
+
+  /* SUPPLIER TABS */
+  .tabs {
+    display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .tab {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  /* SUPPLIER PANEL */
+  .supplier-panel { display: none; }
+  .supplier-panel.active { display: block; }
+
+  .supplier-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px 10px 0 0;
+    padding: 14px 16px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+  }
+  .supplier-header .field { min-width: 140px; flex: 1; }
+
+  /* COST INPUTS */
+  .cost-section {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .cost-section .field label { color: var(--accent); }
+
+  /* THICKNESS TABLE */
+  .table-wrapper {
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+  thead tr {
+    background: #0d1e30;
+  }
+  th {
+    padding: 10px 10px;
+    text-align: right;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  th:first-child { text-align: left; }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(0,194,255,0.04); }
+  td {
+    padding: 9px 10px;
+    text-align: right;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  td:first-child { text-align: left; }
+  td input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    width: 90px;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  td input:focus { border-color: var(--accent); }
+  .thickness-badge {
+    display: inline-block;
+    background: var(--s1);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .calc-val { color: var(--text); }
+  .calc-zar { color: var(--green); font-weight: 500; }
+  .calc-m2 { color: var(--accent); }
+
+  /* SIZE SELECTOR */
+  .size-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .size-label {
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px; margin-right: 4px;
+  }
+  .size-btn {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Mono', monospace;
+  }
+  .size-btn.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+  /* COMPARISON TABLE */
+  .compare-section {
+    margin-top: 24px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .compare-header {
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+  }
+  .compare-size-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* BEST PRICE highlight */
+  .best { color: var(--green) !important; }
+  .best-bg { background: rgba(0,229,160,0.06) !important; }
+  .worst { color: #ff4444 !important; }
+
+  /* SUMMARY CARDS */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .card-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .card-value { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* SECTION DIVIDER */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin: 20px 0 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .note { font-size: 11px; color: var(--muted); padding: 10px 16px; background: var(--surface); }
+
+  @media (max-width: 480px) {
+    .globals-grid { grid-template-columns: 1fr 1fr; }
+    .cost-section { grid-template-columns: 1fr 1fr; }
+    th, td { padding: 7px 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">GLASS<span>COST</span></div>
+    <div class="badge">China 2026</div>
+  </div>
+  <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+</div>
+
+<!-- GLOBAL SETTINGS -->
+<div class="globals">
+  <div class="globals-title">Global Settings</div>
+  <div class="globals-grid">
+    <div class="field">
+      <label>USD / ZAR Rate</label>
+      <input type="number" id="exRate" value="18.50" step="0.01" oninput="recalcAll()">
+    </div>
+    <div class="field">
+      <label>Import Duty %</label>
+      <input type="number" id="dutyPct" value="10" step="0.1" oninput="recalcAll()">
+    </div>
+    <div class="field">
+      <label>VAT %</label>
+      <input type="number" id="vatPct" value="15" step="0.1" oninput="recalcAll()">
+    </div>
+    <div class="field">
+      <label>Insurance %</label>
+      <input type="number" id="insurancePct" value="0.5" step="0.1" oninput="recalcAll()">
+    </div>
+    <div class="field">
+      <label>Sheet Size</label>
+      <select id="globalSize" onchange="recalcAll()">
+        <option value="1830x1220">1830 × 1220</option>
+        <option value="2440x1830">2440 × 1830</option>
+        <option value="3210x2250" selected>3210 × 2250</option>
+        <option value="3300x2140">3300 × 2140</option>
+        <option value="3660x2440">3660 × 2440</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SUPPLIER TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(0)">Supplier 1</div>
+    <div class="tab" onclick="switchTab(1)">Supplier 2</div>
+    <div class="tab" onclick="switchTab(2)">Supplier 3</div>
+  </div>
+
+  <!-- SUPPLIER PANELS -->
+  <div id="panels"></div>
+
+  <!-- COMPARISON -->
+  <div class="section-title">Side-by-Side Comparison</div>
+  <div class="compare-section">
+    <div class="compare-header">
+      <div class="compare-title">Landed Cost Comparison — ZAR / m²</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:var(--muted)">Size:</span>
+        <select id="compareSize" onchange="renderComparison()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:12px;font-family:'DM Mono',monospace;">
+          <option value="1830x1220">1830×1220</option>
+          <option value="2440x1830">2440×1830</option>
+          <option value="3210x2250" selected>3210×2250</option>
+          <option value="3300x2140">3300×2140</option>
+          <option value="3660x2440">3660×2440</option>
+        </select>
+      </div>
+    </div>
+    <div id="comparisonTable" style="overflow-x:auto;"></div>
+    <div class="note">✦ Green = lowest landed cost &nbsp;|&nbsp; Red = highest &nbsp;|&nbsp; All values in ZAR/m² including duty, freight, insurance, port & VAT</div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="section-title">Order Summary</div>
+  <div id="summaryCards" class="summary-cards"></div>
+
+</div>
+
+<script>
+const THICKNESSES = [3,4,5,6,8,10,12,15];
+const SIZES = {
+  '1830x1220': {w:1830, h:1220},
+  '2440x1830': {w:2440, h:1830},
+  '3210x2250': {w:3210, h:2250},
+  '3300x2140': {w:3300, h:2140},
+  '3660x2440': {w:3660, h:2440}
+};
+const SIZE_LABELS = {
+  '1830x1220':'1830×1220','2440x1830':'2440×1830',
+  '3210x2250':'3210×2250','3300x2140':'3300×2140','3660x2440':'3660×2440'
+};
+const SUPPLIER_COLORS = ['var(--s1)','var(--s2)','var(--s3)'];
+const SUPPLIER_ACCENTS = ['var(--accent)','var(--green)','var(--accent2)'];
+
+function sheetM2(sizeKey) {
+  const s = SIZES[sizeKey];
+  return (s.w * s.h) / 1e6;
+}
+
+// Build panels
+function buildPanels() {
+  const cont = document.getElementById('panels');
+  cont.innerHTML = '';
+  for (let si = 0; si < 3; si++) {
+    const panel = document.createElement('div');
+    panel.className = 'supplier-panel' + (si === 0 ? ' active' : '');
+    panel.id = `panel${si}`;
+    panel.innerHTML = `
+      <div class="supplier-header">
+        <div class="field" style="min-width:160px;flex:2">
+          <label>Supplier Name</label>
+          <input type="text" id="s${si}_name" value="Supplier ${si+1}" oninput="updateTabs()">
+        </div>
+        <div class="field">
+          <label>Origin City</label>
+          <input type="text" id="s${si}_city" value="Shanghai" placeholder="e.g. Shanghai">
+        </div>
+        <div class="field">
+          <label>Container Size</label>
+          <select id="s${si}_container">
+            <option value="20">20ft FCL</option>
+            <option value="40" selected>40ft FCL</option>
+            <option value="40hc">40ft HC FCL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sheets / Container</label>
+          <input type="number" id="s${si}_sheets" value="200" oninput="recalcSupplier(${si})">
+        </div>
+      </div>
+      <div class="cost-section">
+        <div class="field">
+          <label>Freight Total (USD)</label>
+          <input type="number" id="s${si}_freight" value="3500" step="10" oninput="recalcSupplier(${si})">
+        </div>
+        <div class="field">
+          <label>Port & Clearing (ZAR)</label>
+          <input type="number" id="s${si}_port" value="18000" step="100" oninput="recalcSupplier(${si})">
+        </div>
+        <div class="field">
+          <label>Other Costs (ZAR)</label>
+          <input type="number" id="s${si}_other" value="0" step="100" oninput="recalcSupplier(${si})">
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table id="s${si}_table">
+          <thead>
+            <tr>
+              <th>Thick</th>
+              <th>FOB USD/m²</th>
+              <th>Sheet m²</th>
+              <th>FOB USD/sheet</th>
+              <th>Freight USD/m²</th>
+              <th>CIF USD/m²</th>
+              <th>Duty ZAR/m²</th>
+              <th>Port ZAR/m²</th>
+              <th>Ins ZAR/m²</th>
+              <th>Ex-VAT ZAR/m²</th>
+              <th>Landed ZAR/m²</th>
+              <th>ZAR/sheet</th>
+            </tr>
+          </thead>
+          <tbody id="s${si}_body"></tbody>
+        </table>
+      </div>
+    `;
+    cont.appendChild(panel);
+    buildRows(si);
+  }
+}
+
+function buildRows(si) {
+  const tbody = document.getElementById(`s${si}_body`);
+  tbody.innerHTML = '';
+  THICKNESSES.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.id = `s${si}_row${t}`;
+    tr.innerHTML = `
+      <td><span class="thickness-badge">${t}mm</span></td>
+      <td><input type="number" id="s${si}_fob${t}" value="" placeholder="0.00" step="0.01" oninput="recalcSupplier(${si})"></td>
+      <td class="calc-m2" id="s${si}_sheetm2${t}">—</td>
+      <td class="calc-val" id="s${si}_fobsheet${t}">—</td>
+      <td class="calc-val" id="s${si}_freightm2${t}">—</td>
+      <td class="calc-val" id="s${si}_cif${t}">—</td>
+      <td class="calc-val" id="s${si}_duty${t}">—</td>
+      <td class="calc-val" id="s${si}_port${t}">—</td>
+      <td class="calc-val" id="s${si}_ins${t}">—</td>
+      <td class="calc-val" id="s${si}_exvat${t}">—</td>
+      <td class="calc-zar" id="s${si}_landed${t}">—</td>
+      <td class="calc-zar" id="s${si}_landedsheet${t}">—</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function getNum(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function fmt(n, dec=2) { return n > 0 ? n.toFixed(dec) : '—'; }
+function fmtZAR(n) { return n > 0 ? 'R ' + n.toFixed(2) : '—'; }
+
+function recalcSupplier(si) {
+  const exRate   = getNum('exRate');
+  const dutyPct  = getNum('dutyPct') / 100;
+  const vatPct   = getNum('vatPct') / 100;
+  const insPct   = getNum('insurancePct') / 100;
+  const sizeKey  = document.getElementById('globalSize').value;
+  const m2       = sheetM2(sizeKey);
+  const sheets   = getNum(`s${si}_sheets`) || 1;
+  const freightUSD = getNum(`s${si}_freight`);
+  const portZAR  = getNum(`s${si}_port`);
+  const otherZAR = getNum(`s${si}_other`);
+
+  // freight per m² USD (across all sheets of selected size)
+  const totalM2  = sheets * m2;
+  const freightPerM2USD = totalM2 > 0 ? freightUSD / totalM2 : 0;
+  const portPerM2ZAR = totalM2 > 0 ? (portZAR + otherZAR) / totalM2 : 0;
+
+  THICKNESSES.forEach(t => {
+    const fobM2USD = getNum(`s${si}_fob${t}`);
+    if (fobM2USD <= 0) {
+      ['sheetm2','fobsheet','freightm2','cif','duty','port','ins','exvat','landed','landedsheet'].forEach(f => {
+        const el = document.getElementById(`s${si}_${f}${t}`);
+        if (el) el.textContent = '—';
+      });
+      return;
+    }
+
+    const fobSheetUSD   = fobM2USD * m2;
+    const cifM2USD      = fobM2USD + freightPerM2USD;
+    const cifM2ZAR      = cifM2USD * exRate;
+    const dutyM2ZAR     = cifM2ZAR * dutyPct;
+    const insM2ZAR      = cifM2ZAR * insPct;
+    const exVatM2ZAR    = cifM2ZAR + dutyM2ZAR + insM2ZAR + portPerM2ZAR;
+    const landedM2ZAR   = exVatM2ZAR * (1 + vatPct);
+    const landedSheetZAR = landedM2ZAR * m2;
+
+    document.getElementById(`s${si}_sheetm2${t}`).textContent  = m2.toFixed(4) + ' m²';
+    document.getElementById(`s${si}_fobsheet${t}`).textContent = '$ ' + fobSheetUSD.toFixed(2);
+    document.getElementById(`s${si}_freightm2${t}`).textContent = '$ ' + freightPerM2USD.toFixed(3);
+    document.getElementById(`s${si}_cif${t}`).textContent      = '$ ' + cifM2USD.toFixed(3);
+    document.getElementById(`s${si}_duty${t}`).textContent     = 'R ' + dutyM2ZAR.toFixed(2);
+    document.getElementById(`s${si}_port${t}`).textContent     = 'R ' + portPerM2ZAR.toFixed(2);
+    document.getElementById(`s${si}_ins${t}`).textContent      = 'R ' + insM2ZAR.toFixed(2);
+    document.getElementById(`s${si}_exvat${t}`).textContent    = 'R ' + exVatM2ZAR.toFixed(2);
+    document.getElementById(`s${si}_landed${t}`).textContent   = 'R ' + landedM2ZAR.toFixed(2);
+    document.getElementById(`s${si}_landedsheet${t}`).textContent = 'R ' + landedSheetZAR.toFixed(2);
+  });
+
+  renderComparison();
+  renderSummary();
+}
+
+function recalcAll() {
+  for (let si = 0; si < 3; si++) recalcSupplier(si);
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.supplier-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+
+function updateTabs() {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const name = document.getElementById(`s${i}_name`)?.value || `Supplier ${i+1}`;
+    t.textContent = name;
+  });
+}
+
+function getLandedValues(sizeKey) {
+  // Returns { thickness: [s0val, s1val, s2val] }
+  const m2 = sheetM2(sizeKey);
+  const exRate   = getNum('exRate');
+  const dutyPct  = getNum('dutyPct') / 100;
+  const vatPct   = getNum('vatPct') / 100;
+  const insPct   = getNum('insurancePct') / 100;
+  const result = {};
+  THICKNESSES.forEach(t => {
+    result[t] = [];
+    for (let si = 0; si < 3; si++) {
+      const fobM2USD = getNum(`s${si}_fob${t}`);
+      const sheets = getNum(`s${si}_sheets`) || 1;
+      const totalM2 = sheets * m2;
+      const freightUSD = getNum(`s${si}_freight`);
+      const portZAR = getNum(`s${si}_port`) + getNum(`s${si}_other`);
+      const freightPerM2USD = totalM2 > 0 ? freightUSD / totalM2 : 0;
+      const portPerM2ZAR = totalM2 > 0 ? portZAR / totalM2 : 0;
+      if (fobM2USD <= 0) { result[t].push(null); continue; }
+      const cifM2ZAR = (fobM2USD + freightPerM2USD) * exRate;
+      const exVat = cifM2ZAR + cifM2ZAR * dutyPct + cifM2ZAR * insPct + portPerM2ZAR;
+      result[t].push(exVat * (1 + vatPct));
+    }
+  });
+  return result;
+}
+
+function renderComparison() {
+  const sizeKey = document.getElementById('compareSize').value;
+  const vals = getLandedValues(sizeKey);
+  const names = [0,1,2].map(i => document.getElementById(`s${i}_name`)?.value || `Supplier ${i+1}`);
+
+  let html = `<table style="width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:12px;">
+    <thead><tr style="background:#0d1e30;">
+      <th style="padding:10px;text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Thickness</th>`;
+  names.forEach((n,i) => {
+    html += `<th style="padding:10px;text-align:right;font-size:10px;color:${SUPPLIER_ACCENTS[i]};text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">${n}<br><span style="color:var(--muted);font-size:9px">ZAR/m²</span></th>`;
+  });
+  html += `<th style="padding:10px;text-align:right;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Saving<br><span style="font-size:9px">Best vs Worst</span></th>`;
+  html += `</tr></thead><tbody>`;
+
+  THICKNESSES.forEach(t => {
+    const row = vals[t];
+    const valid = row.filter(v => v !== null);
+    if (valid.length === 0) return;
+    const minV = Math.min(...valid);
+    const maxV = Math.max(...valid);
+    const saving = maxV - minV;
+    html += `<tr style="border-bottom:1px solid var(--border)">`;
+    html += `<td style="padding:9px 10px"><span style="background:var(--s1);color:var(--accent);padding:3px 8px;border-radius:4px;font-size:11px">${t}mm</span></td>`;
+    row.forEach(v => {
+      if (v === null) {
+        html += `<td style="padding:9px 10px;text-align:right;color:var(--muted)">—</td>`;
+      } else {
+        const isBest = Math.abs(v - minV) < 0.001;
+        const isWorst = valid.length > 1 && Math.abs(v - maxV) < 0.001 && !isBest;
+        const color = isBest ? 'var(--green)' : isWorst ? '#ff4444' : 'var(--text)';
+        const bg = isBest ? 'rgba(0,229,160,0.06)' : '';
+        html += `<td style="padding:9px 10px;text-align:right;color:${color};background:${bg};font-weight:${isBest?'600':'400'}">R ${v.toFixed(2)}</td>`;
+      }
+    });
+    html += `<td style="padding:9px 10px;text-align:right;color:var(--accent2)">${valid.length > 1 ? 'R ' + saving.toFixed(2) : '—'}</td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('comparisonTable').innerHTML = html;
+}
+
+function renderSummary() {
+  const sizeKey = document.getElementById('globalSize').value;
+  const m2 = sheetM2(sizeKey);
+  const exRate = getNum('exRate');
+  const cards = document.getElementById('summaryCards');
+  let html = '';
+  for (let si = 0; si < 3; si++) {
+    const name = document.getElementById(`s${si}_name`)?.value || `Supplier ${si+1}`;
+    const sheets = getNum(`s${si}_sheets`);
+    const freightUSD = getNum(`s${si}_freight`);
+    const portZAR = getNum(`s${si}_port`) + getNum(`s${si}_other`);
+    const totalM2 = sheets * m2;
+    // sum of all FOB costs (average across entered thicknesses)
+    let fobCount = 0, fobSum = 0;
+    THICKNESSES.forEach(t => {
+      const v = getNum(`s${si}_fob${t}`);
+      if (v > 0) { fobSum += v; fobCount++; }
+    });
+    const avgFOB = fobCount > 0 ? fobSum / fobCount : 0;
+    const totalUSD = avgFOB > 0 ? (avgFOB * totalM2 + freightUSD) : 0;
+    html += `
+      <div class="card" style="border-color:${SUPPLIER_ACCENTS[si]}44">
+        <div class="card-label" style="color:${SUPPLIER_ACCENTS[si]}">${name}</div>
+        <div class="card-value" style="color:${SUPPLIER_ACCENTS[si]}">${totalM2.toFixed(1)}</div>
+        <div class="card-sub">m² in container</div>
+      </div>
+      <div class="card">
+        <div class="card-label">${name} Total Est.</div>
+        <div class="card-value" style="font-size:14px">${totalUSD > 0 ? '$ ' + totalUSD.toFixed(0) : '—'}</div>
+        <div class="card-sub">USD (avg FOB + freight)</div>
+      </div>
+    `;
+  }
+  html += `
+    <div class="card" style="border-color:var(--accent2)44">
+      <div class="card-label" style="color:var(--accent2)">Exchange Rate</div>
+      <div class="card-value" style="color:var(--accent2)">R ${exRate.toFixed(2)}</div>
+      <div class="card-sub">per USD</div>
+    </div>
+  `;
+  cards.innerHTML = html;
+}
+
+function exportCSV() {
+  const sizeKey = document.getElementById('globalSize').value;
+  const names = [0,1,2].map(i => document.getElementById(`s${i}_name`)?.value || `Supplier ${i+1}`);
+  const vals = getLandedValues(sizeKey);
+  let csv = `Thickness,${names[0]} ZAR/m2,${names[1]} ZAR/m2,${names[2]} ZAR/m2,Best Price,Saving\n`;
+  THICKNESSES.forEach(t => {
+    const row = vals[t];
+    const valid = row.filter(v => v !== null);
+    const best = valid.length ? Math.min(...valid).toFixed(2) : '';
+    const worst = valid.length ? Math.max(...valid) : 0;
+    const saving = valid.length > 1 ? (worst - Math.min(...valid)).toFixed(2) : '';
+    csv += `${t}mm,${row.map(v => v !== null ? v.toFixed(2) : '').join(',')},${best},${saving}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `glass_landed_cost_${sizeKey}.csv`;
+  a.click();
+}
+
+// INIT
+buildPanels();
+recalcAll();
+</script>
+</body>
+</html>
